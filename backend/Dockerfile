@@ -30,8 +30,6 @@ COPY . /app/backend
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --package lms-backend
 
-RUN /app/.venv/bin/opentelemetry-bootstrap -a install
-
 # ---
 # Stage 2: use a final image without uv
 # ---
