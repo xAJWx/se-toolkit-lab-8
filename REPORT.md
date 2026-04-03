@@ -100,11 +100,48 @@ Labs 02–08 have no submissions yet. Want me to check group performance, top le
 
 ## Task 2A — Deployed agent
 
-<!-- Paste a short nanobot startup log excerpt showing the gateway started inside Docker -->
+Nanobot gateway startup log excerpt:
+
+```
+Using config: /app/nanobot/config.resolved.json
+🐈 Starting nanobot gateway version 0.1.4.post5 on port 18790...
+✓ Channels enabled: webchat
+✓ Heartbeat: every 1800s
+MCP server 'lms': connected, 9 tools registered
+MCP server 'webchat': connected, 1 tools registered
+Agent loop started
+```
+
+All services running via `docker compose --env-file .env.docker.secret up -d`.
 
 ## Task 2B — Web client
 
-<!-- Screenshot of a conversation with the agent in the Flutter web app -->
+**WebSocket test via Caddy:**
+
+```
+$ echo '{"content":"What labs are available?"}' | websocat "ws://localhost:42002/ws/chat?access_key=my-nanobot-key"
+```
+
+Response:
+> Here are the available labs:
+> 
+> | ID | Title |
+> |----|-------|
+> | lab-01 | Lab 01 – Products, Architecture & Roles |
+> | lab-02 | Lab 02 — Run, Fix, and Deploy a Backend Service |
+> | lab-03 | Lab 03 — Backend API: Explore, Debug, Implement, Deploy |
+> | lab-04 | Lab 04 — Testing, Front-end, and AI Agents |
+> | lab-05 | Lab 05 — Data Pipeline and Analytics Dashboard |
+> | lab-06 | Lab 06 — Build Your Own Agent |
+> | lab-07 | Lab 07 — Build a Client with an AI Coding Agent |
+> | lab-08 | lab-08 |
+> 
+> There are **8 labs** in total. Let me know if you'd like details on any specific lab — I can check pass rates, completion rates, group performance, top learners, or submission timelines.
+
+**Flutter web client:** accessible at `http://<vm-ip>:42002/flutter`
+- Login screen appears, accepts `NANOBOT_ACCESS_KEY`
+- Agent answers questions using real LMS data via MCP tools
+- Structured UI choices render properly when multiple labs exist
 
 ## Task 3A — Structured logging
 
