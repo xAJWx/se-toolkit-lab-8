@@ -194,15 +194,83 @@ Returns structured JSON log entries with consistent fields: `service.name`, `sev
 
 ## Task 4A — Multi-step investigation
 
-<!-- Paste the agent's response to "What went wrong?" showing chained log + trace investigation -->
+**"What went wrong?"** (with PostgreSQL stopped):
+
+> Here's what I found:
+>
+> ## 2 Errors in Learning Management Service (last 10 minutes)
+>
+> **Root cause:** DNS resolution failure — `[Errno -2] Name or service not known`
+>
+> **Details:**
+> - **Service:** Learning Management Service
+> - **Operation:** Database `SELECT` query on the `item` table (`lms_backend.db.items`)
+> - **Error:** The service cannot resolve the database hostname
+> - **Impact:** `GET /items/` requests are returning **HTTP 404**
+> - **Timeline:** Two failures at 17:32:27 and 17:32:30 UTC
+>
+> **Trace evidence** (`db0c724eff4bbb15cc00f6e8fe733b94`):
+> - The `connect` span failed after ~289ms with an error tag
+> - This caused the parent `GET /items/` request to fail and return 404
+> - 6 spans total in the trace, with the database connection being the root failure
+>
+> **Likely fix:** Check the database connection configuration — the hostname for the database is either misspelled, the DNS entry doesn't exist, or the database service is down/unreachable from the LMS backend.
+
+The agent chained `logs_error_count` → `logs_search` → `traces_get` and produced a coherent investigation citing both log and trace evidence.
 
 ## Task 4B — Proactive health check
 
-<!-- Screenshot or transcript of the proactive health report that appears in the Flutter chat -->
+Created a recurring cron job (every 2 minutes) via the web chat. While PostgreSQL was stopped, the agent proactively posted:
+
+> ⚠️ **LMS Health Check — Errors Detected**
+>
+> **2 errors** found in the Learning Management Service over the last 2 minutes.
+>
+> **Root cause:** DNS resolution failure — `[Errno -2] Name or service not known`
+>
+> All errors are identical `db_query` failures on the `item` table. The LMS backend cannot reach its database. This is an infrastructure/connectivity issue.
+
+Nanobot logs confirm: `Cron: executing job 'Run health check'` → `mcp_obs_logs_error_count({"service": "Learning Management Service", "window": "2m"})` → UI message posted to chat → `evaluate_response: should_notify=True`.
 
 ## Task 4C — Bug fix and recovery
 
-<!-- 1. Root cause identified
-     2. Code fix (diff or description)
-     3. Post-fix response to "What went wrong?" showing the real underlying failure
-     4. Healthy follow-up report or transcript after recovery -->
+**Root cause:** In `backend/src/lms_backend/routers/items.py`, the `GET /items/` endpoint caught all exceptions with a broad `except Exception` and returned a misleading `HTTP 404 NOT_FOUND` with detail `"Items not found"`. This hid the real database/infrastructure failure behind a "not found" message.
+
+**Fix:** Changed the exception handler to return `HTTP 500 INTERNAL_SERVER_ERROR` with the actual error message, and upgraded the log level from `warning` to `error`:
+
+```diff
+     except Exception as exc:
+-        logger.warning(
+-            "items_list_failed_as_not_found",
+-            extra={"event": "items_list_failed_as_not_found"},
++        logger.error(
++            "items_list_failed",
++            extra={"event": "items_list_failed", "error": str(exc)},
+         )
+         raise HTTPException(
+-            status_code=status.HTTP_404_NOT_FOUND,
+-            detail="Items not found",
++            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
++            detail=f"Failed to retrieve items: {exc}",
+         ) from exc
+```
+
+**Post-fix failure check** (PostgreSQL stopped, after redeploy):
+
+> Here's what I found:
+>
+> **12 errors** in the **Learning Management Service** over the last 10 minutes.
+>
+> ### Root Cause: DNS Resolution Failure
+> All errors share the same underlying issue: **`[Errno -2] Name or service not known`**
+>
+> ### Error Flow
+> | Layer | Component | What Happened |
+> |-------|-----------|---------------|
+> | Database | `lms_backend.db.items` | `SELECT` on `item` table fails with DNS error |
+> | Router | `lms_backend.routers.items` | `items_list_failed` event logged |
+> | HTTP | `lms_backend.main` | `GET /items/` returns **500** |
+
+After the fix, the agent now correctly reports **HTTP 500** (not the misleading 404) and the `items_list_failed` event (not `items_list_failed_as_not_found`).
+
+**Healthy follow-up** (PostgreSQL restarted): The system is healthy — no backend errors in the last 2 minutes. The cron health check reports the system looks healthy.

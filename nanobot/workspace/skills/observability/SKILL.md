@@ -19,6 +19,13 @@ You have access to observability tools that query VictoriaLogs (structured logs)
 
 ## Strategy
 
+- **"What went wrong?" / "Check system health" — one-shot investigation.** When the user asks what went wrong or to check system health, run this full chain in one pass:
+  1. Call `mcp_obs_logs_error_count` with a fresh window (e.g. `window: "10m"`, `service: "Learning Management Service"`) to see if there are recent errors.
+  2. If errors exist, call `mcp_obs_logs_search` with a scoped query like `_time:10m service.name:"Learning Management Service" severity:ERROR` to get the actual error entries.
+  3. Extract a `trace_id` from the most recent error log entry.
+  4. Call `mcp_obs_traces_get` with that `trace_id` to fetch the full trace and see the complete request flow.
+  5. Write one short explanation that cites **both** the log evidence (what the error was) **and** the trace evidence (where in the request flow it happened), naming the affected service and the root failing operation.
+
 - **Error investigation.** When the user asks about errors, failures, or "what went wrong":
   1. Start with `mcp_obs_logs_error_count` to check if there are recent errors and which services are affected.
   2. Use `mcp_obs_logs_search` with a scoped query (e.g. `_time:10m service.name:"Learning Management Service" severity:ERROR`) to find specific error entries.
