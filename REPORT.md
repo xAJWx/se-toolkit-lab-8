@@ -6,68 +6,97 @@ Paste your checkpoint evidence below. Add screenshots as image files in the repo
 
 **Q: "What is the agentic loop?"**
 
-The agentic loop is the core cycle that an AI agent follows to accomplish tasks autonomously:
+The **agentic loop** is the iterative cycle an AI agent follows to accomplish tasks autonomously. Instead of just generating a single response, the agent continuously reasons, acts, and adapts until a goal is reached.
 
-1. **Perceive** — The agent receives input (a user request, tool output, or environmental signal).
-2. **Reason** — The agent analyzes the situation, decides what to do next, and plans its approach.
-3. **Act** — The agent executes an action — calling a tool, running code, making an API call, etc.
-4. **Observe** — The agent receives feedback from the action (output, error, state change).
-5. **Repeat** — Based on the observation, the agent loops back to step 2, refining its plan until the task is complete or a stopping condition is met.
+A typical agentic loop looks like this:
 
-What makes it "agentic" (vs. a simple chatbot) is the loop itself — the agent doesn't just produce one response and stop. It iterates, using tool outputs to inform subsequent decisions, self-correcting when things go wrong, and continuing until the goal is achieved.
+1. **Observe** — Read the user's request, check the current state, and gather context.
+2. **Plan** — Decide what steps or tools are needed to make progress.
+3. **Act** — Execute a tool call (e.g., read a file, run a command, search the web).
+4. **Reflect** — Analyze the tool's output. Did it work? What's the next step?
+5. **Repeat** — Loop back to planning until the task is complete or clarification is needed.
 
-**Q: "What labs are available in our LMS?"**
+This is different from a standard chatbot, which typically does a single "prompt → response" exchange. An agentic loop enables multi-step reasoning, error recovery, and tool use — essentially letting the agent *work through* a problem rather than just *talking about* it.
 
-The agent found 8 labs by inspecting local repo files and querying the backend directly:
+In my own case, when you ask me to do something like "fix this bug," I don't just guess the answer — I read the file, analyze the code, make an edit, verify it, and report back. That entire flow is the agentic loop in action.
 
-| ID | Lab |
-|----|-----|
-| 1 | Lab 01 – Products, Architecture & Roles |
-| 2 | Lab 02 — Run, Fix, and Deploy a Backend Service |
-| 3 | Lab 03 — Backend API: Explore, Debug, Implement, Deploy |
-| 4 | Lab 04 — Testing, Front-end, and AI Agents |
-| 5 | Lab 05 — Data Pipeline and Analytics Dashboard |
-| 6 | Lab 06 — Build Your Own Agent |
-| 7 | Lab 07 — Build a Client with an AI Coding Agent |
-| 8 | lab-08 |
+**Q: "What labs are available?"**
 
-Note: At this stage the agent has no MCP tools configured — it used its built-in file/exec tools to discover the data. Part B will add proper LMS MCP tools.
+Here are the 8 available labs:
+
+| ID | Title |
+|----|-------|
+| lab-01 | Lab 01 – Products, Architecture & Roles |
+| lab-02 | Lab 02 — Run, Fix, and Deploy a Backend Service |
+| lab-03 | Lab 03 — Backend API: Explore, Debug, Implement, Deploy |
+| lab-04 | Lab 04 — Testing, Front-end, and AI Agents |
+| lab-05 | Lab 05 — Data Pipeline and Analytics Dashboard |
+| lab-06 | Lab 06 — Build Your Own Agent |
+| lab-07 | Lab 07 — Build a Client with an AI Coding Agent |
+| lab-08 | lab-08 |
+
+Let me know if you'd like stats for any of them!
 
 ## Task 1B — Agent with LMS tools
 
 **Q: "What labs are available?"**
 
-The agent called `mcp_lms_lms_labs` and returned real lab names from the backend:
+Here are the 8 available labs:
 
-| # | Lab Title |
-|---|-----------|
-| 1 | Lab 01 – Products, Architecture & Roles |
-| 2 | Lab 02 — Run, Fix, and Deploy a Backend Service |
-| 3 | Lab 03 — Backend API: Explore, Debug, Implement, Deploy |
-| 4 | Lab 04 — Testing, Front-end, and AI Agents |
-| 5 | Lab 05 — Data Pipeline and Analytics Dashboard |
-| 6 | Lab 06 — Build Your Own Agent |
-| 7 | Lab 07 — Build a Client with an AI Coding Agent |
-| 8 | lab-08 |
+| ID | Title |
+|----|-------|
+| lab-01 | Lab 01 – Products, Architecture & Roles |
+| lab-02 | Lab 02 — Run, Fix, and Deploy a Backend Service |
+| lab-03 | Lab 03 — Backend API: Explore, Debug, Implement, Deploy |
+| lab-04 | Lab 04 — Testing, Front-end, and AI Agents |
+| lab-05 | Lab 05 — Data Pipeline and Analytics Dashboard |
+| lab-06 | Lab 06 — Build Your Own Agent |
+| lab-07 | Lab 07 — Build a Client with an AI Coding Agent |
+| lab-08 | lab-08 |
+
+Let me know if you'd like stats for any of them!
 
 **Q: "Is the LMS backend healthy?"**
 
-The agent called `mcp_lms_lms_health` and responded: "Yes, the LMS backend is healthy! It currently has 56 items in the system."
+Yes, the LMS backend is **healthy** with **56 items** in the system.
 
 **Q: "Which lab has the lowest pass rate?"**
 
-The agent chained multiple tool calls: first `mcp_lms_lms_labs` to get lab list, then `mcp_lms_lms_pass_rates` for all labs, then fell back to `mcp_lms_lms_completion_rate`. Result: Lab 01 is the only lab with data (93.9% completion, 108/115 passed). Labs 02–08 have 0 submissions.
+Only **lab-01** has pass rate data so far — labs 02 through 08 have no submissions yet.
+
+For **lab-01**, the overall completion rate is **93.9%** (108 out of 115 passed). Here's a breakdown by task:
+
+| Task | Avg Score | Attempts |
+|------|-----------|----------|
+| Lab setup | 97.2% | 119 |
+| Task 0: Practice the Git workflow | 65.2% | 214 |
+| Task 1: Product & architecture description | 59.4% | 90 |
+| Task 2: Roles and skills mapping | 53.9% | 42 |
+| Optional: Resolve a merge conflict | 41.7% | 6 |
+| Optional: Create a release | 50.0% | 2 |
+| Optional: Add a CI check | 25.0% | 4 |
+| Optional: Plan skill development | 0.0% | 1 |
+
+The toughest task in lab-01 is **"Optional: Plan skill development"** (0.0% avg score), followed by **"Optional: Add a CI check"** (25.0%). Among the core tasks, **"Task 2: Roles and skills mapping"** has the lowest average score at 53.9%.
 
 ## Task 1C — Skill prompt
 
 **Q: "Show me the scores"** (no lab specified)
 
-With the LMS skill prompt, the agent now follows the correct strategy:
-1. Called `lms_health` to verify backend is up (56 items)
-2. Called `lms_labs` to get the list of 8 labs
-3. Asked the user to pick a lab: "Which one would you like to see scores for?" and listed all 8 labs with their titles
+Only **lab-01** has submission data so far. Here are the scores:
 
-This is the expected behavior — the skill teaches the agent that score-related queries need a lab parameter, and if not provided, it should list available labs first.
+| Task | Avg Score | Attempts |
+|------|-----------|----------|
+| Lab setup | 97.2% | 119 |
+| Task 0: Practice the Git workflow | 65.2% | 214 |
+| Task 1: Product & architecture description | 59.4% | 90 |
+| Task 2: Roles and skills mapping | 53.9% | 42 |
+| Optional: Resolve a merge conflict | 41.7% | 6 |
+| Optional: Create a release | 50.0% | 2 |
+| Optional: Add a CI check | 25.0% | 4 |
+| Optional: Plan skill development | 0.0% | 1 |
+
+Labs 02–08 have no submissions yet. Want me to check group performance, top learners, or the submission timeline for lab-01?
 
 ## Task 2A — Deployed agent
 
