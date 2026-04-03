@@ -145,31 +145,23 @@ Response:
 
 ## Task 3A — Structured logging
 
-**Happy-path log excerpt** (request_started → request_completed with status 200):
+**Happy-path log excerpt** from VictoriaLogs (query: `_time:1h service.name:"Learning Management Service" severity:INFO`):
 
-```
-2026-04-03 16:50:14,441 INFO [lms_backend.main] - request_started
-  trace_id=def221919a359df955992483c81726ac
-2026-04-03 16:50:14,442 INFO [lms_backend.auth] - auth_success
-2026-04-03 16:50:14,442 INFO [lms_backend.db.items] - db_query
-2026-04-03 16:50:14,819 INFO [lms_backend.main] - request_completed
+```json
+{"_msg":"auth_success","_time":"2026-04-03T17:09:59.837106432Z","event":"auth_success","service.name":"Learning Management Service","severity":"INFO","trace_id":"3028b642f9f2e36865de3de55e0f46df","span_id":"bec5e6e74aaf80d3","scope.name":"lms_backend.auth"}
+{"_msg":"db_query","_time":"2026-04-03T17:09:59.837420544Z","event":"db_query","operation":"select","table":"item","service.name":"Learning Management Service","severity":"INFO","trace_id":"3028b642f9f2e36865de3de55e0f46df","span_id":"bec5e6e74aaf80d3","scope.name":"lms_backend.db.items"}
+{"_msg":"request_completed","_time":"2026-04-03T17:10:00.082043648Z","event":"request_completed","method":"GET","path":"/items/","status":"200","duration_ms":"245","service.name":"Learning Management Service","severity":"INFO","trace_id":"3028b642f9f2e36865de3de55e0f46df","span_id":"bec5e6e74aaf80d3","scope.name":"lms_backend.main"}
 ```
 
-**Error-path log excerpt** (db_query with error after stopping PostgreSQL):
+**Error-path log excerpt** from VictoriaLogs (query: `_time:1h service.name:"Learning Management Service" severity:ERROR`):
 
-```
-2026-04-03 16:53:47,550 INFO [lms_backend.main] - request_started
-  trace_id=0ec62ffa010a5bd7dd9b5649f17daca5
-2026-04-03 16:53:47,556 INFO [lms_backend.auth] - auth_success
-2026-04-03 16:53:47,556 INFO [lms_backend.db.items] - db_query
-2026-04-03 16:53:50,755 ERROR [lms_backend.db.items] - db_query
-  error="[Errno -2] Name or service not known"
-2026-04-03 16:53:50,767 WARNING [lms_backend.routers.items] - items_list_failed_as_not_found
-2026-04-03 16:53:50,768 INFO [lms_backend.main] - request_completed
+```json
+{"_msg":"db_query","_time":"2026-04-03T17:10:00.08096768Z","event":"db_query","operation":"select","table":"item","service.name":"Learning Management Service","severity":"ERROR","error":"[Errno -2] Name or service not known","trace_id":"3028b642f9f2e36865de3de55e0f46df","span_id":"bec5e6e74aaf80d3","scope.name":"lms_backend.db.items"}
+{"_msg":"db_query","_time":"2026-04-03T17:09:57.8908672Z","event":"db_query","operation":"select","table":"item","service.name":"Learning Management Service","severity":"ERROR","error":"[Errno -2] Name or service not known","trace_id":"fa4084bbc0674d22eb44f499c4774423","span_id":"bc1affc4056eb495","scope.name":"lms_backend.db.items"}
 ```
 
 **VictoriaLogs query** (`_time:10m service.name:"Learning Management Service" severity:ERROR`):
-Returns structured JSON log entries with fields: `service.name`, `severity`, `event`, `error`, `trace_id`, `span_id`. Much easier than grepping docker logs — instant filtering by time, service, and severity.
+Returns structured JSON log entries with consistent fields: `service.name`, `severity`, `event`, `error`, `trace_id`, `span_id`, `scope.name`. Much easier than grepping `docker compose logs` — instant filtering by time window, service, and severity level.
 
 ## Task 3B — Traces
 
