@@ -145,15 +145,60 @@ Response:
 
 ## Task 3A — Structured logging
 
-<!-- Paste happy-path and error-path log excerpts, VictoriaLogs query screenshot -->
+**Happy-path log excerpt** (request_started → request_completed with status 200):
+
+```
+2026-04-03 16:50:14,441 INFO [lms_backend.main] - request_started
+  trace_id=def221919a359df955992483c81726ac
+2026-04-03 16:50:14,442 INFO [lms_backend.auth] - auth_success
+2026-04-03 16:50:14,442 INFO [lms_backend.db.items] - db_query
+2026-04-03 16:50:14,819 INFO [lms_backend.main] - request_completed
+```
+
+**Error-path log excerpt** (db_query with error after stopping PostgreSQL):
+
+```
+2026-04-03 16:53:47,550 INFO [lms_backend.main] - request_started
+  trace_id=0ec62ffa010a5bd7dd9b5649f17daca5
+2026-04-03 16:53:47,556 INFO [lms_backend.auth] - auth_success
+2026-04-03 16:53:47,556 INFO [lms_backend.db.items] - db_query
+2026-04-03 16:53:50,755 ERROR [lms_backend.db.items] - db_query
+  error="[Errno -2] Name or service not known"
+2026-04-03 16:53:50,767 WARNING [lms_backend.routers.items] - items_list_failed_as_not_found
+2026-04-03 16:53:50,768 INFO [lms_backend.main] - request_completed
+```
+
+**VictoriaLogs query** (`_time:10m service.name:"Learning Management Service" severity:ERROR`):
+Returns structured JSON log entries with fields: `service.name`, `severity`, `event`, `error`, `trace_id`, `span_id`. Much easier than grepping docker logs — instant filtering by time, service, and severity.
 
 ## Task 3B — Traces
 
-<!-- Screenshots: healthy trace span hierarchy, error trace -->
+**Healthy trace** (trace_id: `caf5fd36d7f09e03e3d7407c8eee7212`):
+- `GET /items/` → `connect` (22ms) → `SELECT db-lab-8` (297ms) → `http send` (65μs) → `request_completed`
+- Total: ~350ms, all spans successful.
+
+**Error trace** (trace_id: `0ec62ffa010a5bd7dd9b5649f17daca5`):
+- `GET /items/` → `connect` (3191ms) → `SELECT` failed → `db_query` ERROR → `items_list_failed_as_not_found` → `request_completed` (404)
+- The error appears in the `db_query` span — connection failure due to PostgreSQL being down.
 
 ## Task 3C — Observability MCP tools
 
-<!-- Paste agent responses to "any errors in the last hour?" under normal and failure conditions -->
+**Normal conditions — "Any LMS backend errors in the last 10 minutes?"**
+
+> No errors found in the LMS backend over the last 10 minutes — the system looks healthy. ✅
+
+**Failure conditions** (PostgreSQL stopped, 3 failed requests triggered):
+
+> Yes, there are **6 errors** in the Learning Management Service over the last 10 minutes.
+>
+> **Root cause:** DNS resolution failure — `[Errno -2] Name or service not known`
+>
+> All 6 errors are identical:
+> - **Event:** `db_query` (SELECT on the `item` table)
+> - **Scope:** `lms_backend.db.items`
+> - **Error:** The service can't resolve the database hostname
+>
+> This is an **infrastructure/connectivity issue**, not an application bug.
 
 ## Task 4A — Multi-step investigation
 
