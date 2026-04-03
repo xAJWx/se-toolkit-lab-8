@@ -50,7 +50,7 @@ We refer to your fork as `fork` and to the original repo as `upstream`.
 
 #### 1.1.6. Sync your fork with upstream
 
-1. [Sync your fork](../../wiki/github.md#sync-a-fork) so you have the latest changes from the course repository.
+1. [Sync your fork](../../wiki/git-workflow.md#pull-changes-from-the-branch-main-on-the-remote-upstream) so you have the latest changes from the course repository.
 
    Do this **before cloning** to the VM, and again whenever the instructors push updates.
 
@@ -88,20 +88,27 @@ We refer to your fork as `fork` and to the original repo as `upstream`.
    >
    > **Option A — SSH key** (recommended, one-time setup):
    > 1. On the VM, generate a key (skip if `~/.ssh/id_ed25519.pub` already exists):
+   >
    >    ```
    >    ssh-keygen -t ed25519 -C "your-email@example.com"
    >    ```
+   >
    >    Press Enter three times to accept defaults (no passphrase is fine).
    > 2. Print the public key:
+   >
    >    ```
    >    cat ~/.ssh/id_ed25519.pub
    >    ```
+   >
    > 3. Copy the output. In your browser, go to <https://github.com/settings/keys> → **New SSH key** → paste → **Add SSH key**.
    > 4. Clone with the SSH URL instead of HTTPS:
+   >
    >    ```
    >    git clone --recurse-submodules git@github.com:YOUR_GITHUB_USERNAME/se-toolkit-lab-8.git
    >    ```
+   >
    >    Or, if you already cloned via HTTPS, switch the remote:
+   >
    >    ```
    >    git remote set-url origin git@github.com:YOUR_GITHUB_USERNAME/se-toolkit-lab-8.git
    >    ```
@@ -109,6 +116,7 @@ We refer to your fork as `fork` and to the original repo as `upstream`.
    > **Option B — Personal access token** (quick, less secure):
    > 1. In your browser, go to <https://github.com/settings/tokens> → **Generate new token (classic)** → select **`repo`** scope → **Generate token**.
    > 2. Copy the token. On the VM, run:
+   >
    >    ```
    >    git remote set-url origin https://YOUR_TOKEN@github.com/YOUR_GITHUB_USERNAME/se-toolkit-lab-8.git
    >    ```
@@ -259,6 +267,28 @@ docker compose --env-file .env.docker.secret down
 >
 > Then run the `docker compose up` command again.
 >
+> **Python 3.14 + Docker DNS hang (Qwen proxy times out but `curl` works).**
+>
+> If the Qwen proxy health is OK but LLM calls hang — this is a Python 3.14 + Docker internal DNS resolver incompatibility. Python's `getaddrinfo` hangs when going through Docker's DNS at `127.0.0.11`, even though `curl` works fine.
+>
+> Fix by switching the `qwen-code-api` service to host networking in `docker-compose.yml`:
+>
+> ```yaml
+> qwen-code-api:
+>   network_mode: host
+> ```
+>
+> Remove `networks: - lms-network` from the same service (`network_mode` and `networks` are mutually exclusive).
+>
+> The proxy will now listen on port **8080** (its container port) instead of 42005. Update `.env.docker.secret`:
+> ```text
+> QWEN_CODE_API_HOST_PORT=8080
+> ```
+>
+> Also update your `nanobot/config.json` to use port 8080 for the Qwen API base URL.
+>
+> Then recreate: `docker compose --env-file .env.docker.secret up -d --force-recreate qwen-code-api`
+>
 > **Docker Hub rate limits (`Too many requests`).**
 >
 > If you're building outside the university network and hit Docker Hub rate limits, set the registry prefix to empty in `.env.docker.secret`:
@@ -273,7 +303,7 @@ docker compose --env-file .env.docker.secret down
 
 The database starts empty. You need to run the ETL pipeline to populate it with data from the autochecker API.
 
-1. Open in a browser: `http://localhost:42002/docs`
+1. Open `http://<your-vm-ip-address>:42002/docs` in your browser (or `localhost:42002` if you forwarded the port via VS Code).
 
    You should see the Swagger UI page.
 
@@ -303,11 +333,11 @@ The database starts empty. You need to run the ETL pipeline to populate it with 
 
 ### 1.6. Verify the deployment on your VM
 
-1. Open `http://localhost:42002/docs` in a browser.
+1. Open `http://<your-vm-ip-address>:42002/docs` in your browser.
 
    You should see the Swagger UI with all endpoints.
 
-2. Open `http://localhost:42002/` in a browser.
+2. Open `http://<your-vm-ip-address>:42002/` in your browser.
 
    You should see the React dashboard. Enter your `LMS_API_KEY` to connect.
 
